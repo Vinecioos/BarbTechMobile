@@ -124,27 +124,3 @@ No Xcode: `Product → Archive`, depois usar o **Organizer** para enviar à
 
 ---
 
-## Chatbot (assistente virtual)
-
-O botão redondo dourado no canto da tela (só para **clientes** logados) abre o assistente. Ele tem dois modos:
-
-| Modo | Precisa de backend? | O que faz |
-|---|---|---|
-| **Botões** (Agendar horário · Ver disponibilidade · Meus agendamentos) | Não | Usa o Firestore do próprio app: mesmos horários, mesmas regras e mesma reserva da tela de agenda |
-| **Perguntas digitadas** (IA) | Sim (`backend-chatbot/`) | Responde dúvidas sobre cortes, barba, preços e os seus agendamentos |
-
-Sem o backend o app funciona normalmente: só as perguntas digitadas avisam que ainda não estão ativas.
-
-### Ligar a IA (passo a passo)
-
-1. **Publique o backend** (pasta `backend-chatbot/`) num serviço com HTTPS, por exemplo o Render (Web Service, Node).
-   - Build: `npm install` · Start: `npm start`
-2. **Variáveis de ambiente** no serviço (use `backend-chatbot/.env.example` como modelo):
-   - `OPENAI_API_KEY` = a sua chave (crie uma NOVA no painel da OpenAI)
-   - `ALLOWED_ORIGINS` = `https://localhost,capacitor://localhost` (Android e iOS)
-   - `TRUST_PROXY` = `1` (no Render/Heroku)
-3. **Cole a URL** em `www/chatbot-config.js`:
-   ```js
-   export const chatbotApiUrl = "https://SEU-BACKEND.onrender.com/api/chat";
-   ```
-4. Rode `npx cap copy` e gere o app de novo.
