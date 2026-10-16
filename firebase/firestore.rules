@@ -1,0 +1,122 @@
+rules_version = '2';
+
+// BarbTech - Regras de segurança do Firestore (clientes e profissionais separados)
+// Cole em Firestore Database > Regras > Publicar
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Funções auxiliares ----------
+    function logado() {
+      return request.auth != null;
+    }
+
+    function dono(uid) {
+      return logado() && request.auth.uid == uid;
+    }
+
+    function existeCliente(uid) {
+      return exists(/databases/$(database)/documents/clientes/$(uid));
+    }
+
+    function existeProfissional(uid) {
+      return exists(/databases/$(database)/documents/profissionais/$(uid));
+    }
+
+    function ehProfissional() {
+      return logado() && existeProfissional(request.auth.uid);
+    }
+
+    function ehCliente() {
+      return logado() && existeCliente(request.auth.uid);
+    }
+
+    // Cliente que já completou o perfil na tela de personalização
+    function clienteCompleto() {
+      return ehCliente()
+          && get(/databases/$(database)/documents/clientes/$(request.auth.uid)).data.perfilCompleto == true;
+    }
+
+    // ---------- clientes (tudo privado, só o dono lê) ----------
+    // O ID do documento é o uid do Firebase Authentication.
+    // É criado no cadastro (login) só com perfilCompleto = false e
+    // preenchido depois na personalização do perfil.
+    match /clientes/{uid} {
+      allow read: if dono(uid);
+      allow create: if dono(uid)
+                    && !existeProfissional(uid)
+                    && request.resource.data.perfilCompleto == false;
+      allow update: if dono(uid);
+      allow delete: if false;
+    }
+
+    // ---------- profissionais (perfil público) ----------
+    // Aqui ficam só os dados que o cliente pode ver ao escolher o barbeiro.
+    match /profissionais/{uid} {
+      allow read: if logado();
+      allow create: if dono(uid) && !existeCliente(uid);
+      allow update: if dono(uid);
+      allow delete: if false;
+
+      // Dados sensíveis do profissional (CPF, CNPJ, endereço residencial)
+      match /privado/{doc} {
+        allow read, write: if dono(uid);
+      }
+    }
+
+    // ---------- agendas (1:1 com o profissional, ID = uid do profissional) ----------
+    match /agendas/{uid} {
+      allow read: if logado();
+      allow create: if dono(uid) && !existeCliente(uid);
+      allow update: if dono(uid);   // o profissional salva os horários de trabalho (gerenciarAgenda)
+      allow delete: if false;
+    }
+
+    // ---------- barbearias ----------
+    match /barbearias/{id} {
+      allow read: if logado();
+      allow create: if ehProfissional()
+                    && request.resource.data.donoId == request.auth.uid;
+      allow update, delete: if dono(resource.data.donoId);
+    }
+
+    // ---------- servicos ----------
+    match /servicos/{id} {
+      allow read: if logado();
+      allow create: if ehProfissional()
+                    && dono(request.resource.data.profissionalId);
+      allow update, delete: if dono(resource.data.profissionalId);
+    }
+
+    // ---------- agendamentos ----------
+    match /agendamentos/{id} {
+      allow read: if dono(resource.data.clienteId)
+                  || dono(resource.data.profissionalId);
+      allow create: if clienteCompleto()
+                    && dono(request.resource.data.clienteId)
+                    && request.resource.data.status == 'PENDENTE'
+                    && request.resource.data.localAtendimento in ['BARBEARIA', 'DOMICILIO'];
+      allow update: if dono(resource.data.clienteId)
+                    || dono(resource.data.profissionalId);
+      allow delete: if false;
+    }
+
+    // ---------- horariosOcupados ----------
+    // ID = profissionalId_AAAAMMDD_HHmm. Como só existe "create" (sem update),
+    // dois clientes não conseguem reservar o mesmo horário.
+    match /horariosOcupados/{slot} {
+      allow read: if logado();
+      allow create: if clienteCompleto()
+                    && dono(request.resource.data.clienteId);
+      allow update: if false;
+      allow delete: if dono(resource.data.clienteId)
+                    || dono(resource.data.profissionalId);
+    }
+
+    // ---------- notificacoes ----------
+    match /notificacoes/{id} {
+      allow read, delete: if dono(resource.data.destinatarioId);
+      allow create: if logado();
+      allow update: if false;
+    }
+  }
+}

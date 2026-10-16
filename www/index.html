@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E0D0B">
+<title>BarbTech</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Black&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0E0D0B;
+  --surface:#171512;
+  --surface-2:#211E1A;
+  --line:#2E2A24;
+  --gold:#F2C044;
+  --gold-dim:#8A6E23;
+  --ink:#F2EEE7;
+  --muted:#918B80;
+  --ok:#5FBF7E;
+  --radius:14px;
+  --pad:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:#000;
+  font-family:'Archivo',system-ui,sans-serif;
+  color:var(--ink);
+  font-size:15px;
+  line-height:1.45;
+}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,textarea,select{font:inherit}
+
+/* ---------- moldura do celular (só em telas largas) ---------- */
+#phone{
+  position:relative;
+  width:100%;
+  max-width:420px;
+  margin:0 auto;
+  min-height:100vh;
+  min-height:100dvh;
+  background:var(--bg);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+@media (min-width:820px){
+  body{padding:28px 0;background:#0a0a0a}
+  #phone{
+    height:860px;min-height:860px;
+    border-radius:34px;
+    border:1px solid #2a2724;
+    box-shadow:0 30px 80px rgba(0,0,0,.8);
+  }
+}
+
+/* ---------- telas ---------- */
+.screen{display:none;flex-direction:column;flex:1;min-height:0}
+.screen.active{display:flex}
+.scroll{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.scroll::-webkit-scrollbar{display:none}
+.pad{padding:0 var(--pad)}
+.pb-nav{padding-bottom:96px}
+
+/* ---------- topo ---------- */
+.appbar{
+  display:flex;align-items:center;gap:12px;
+  padding:14px var(--pad);
+  padding-top:calc(14px + env(safe-area-inset-top));
+  border-bottom:1px solid var(--line);
+  background:rgba(14,13,11,.92);
+  backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:20;
+}
+.logo{font-weight:700;letter-spacing:-.4px;font-size:17px}
+.logo b{color:var(--gold);font-weight:700}
+.appbar .sp{flex:1}
+.iconbtn{
+  width:36px;height:36px;border-radius:11px;
+  display:grid;place-items:center;
+  border:1px solid var(--line);background:var(--surface);
+  color:var(--muted);
+}
+.iconbtn.has-dot{position:relative}
+.iconbtn.has-dot::after{
+  content:'';position:absolute;top:8px;right:9px;
+  width:6px;height:6px;border-radius:50%;background:var(--gold);
+}
+.back{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px}
+
+/* ---------- tipografia ---------- */
+h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.5px}
+.display{
+  font-family:'Archivo Black',sans-serif;
+  text-transform:uppercase;
+  line-height:.94;
+  letter-spacing:-1.5px;
+}
+.section-title{font-size:19px;margin:26px 0 12px}
+.muted{color:var(--muted)}
+.tiny{font-size:12px;line-height:1.4}
+.rule{height:1px;background:var(--line);margin:22px 0}
+
+/* ---------- botões ---------- */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;height:50px;border-radius:12px;
+  font-weight:600;font-size:15px;
+}
+.btn-gold{background:var(--gold);color:#17140D}
+.btn-gold:active{background:#d9aa35}
+.btn-ghost{border:1px solid var(--line);background:var(--surface-2);color:var(--ink)}
+.btn-line{border:1px solid var(--gold-dim);color:var(--gold)}
+.btn-sm{height:40px;font-size:13px;padding:0 16px;width:auto;border-radius:10px}
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:16px;
+}
+.card-gold{border-color:var(--gold-dim)}
+
+/* ---------- foto placeholder ---------- */
+.ph{
+  background:
+    radial-gradient(120% 90% at 20% 0%, rgba(242,192,68,.16), transparent 60%),
+    linear-gradient(160deg,#2b2620 0%,#15130f 55%,#0d0c0a 100%);
+  position:relative;overflow:hidden;
+}
+.ph::after{
+  content:'';position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(115deg,rgba(255,255,255,.035) 0 2px,transparent 2px 9px);
+}
+.ph-face{
+  background:
+    radial-gradient(60% 55% at 50% 32%, rgba(242,192,68,.20), transparent 70%),
+    linear-gradient(180deg,#39322a,#171410);
+}
+
+/* =========== SPLASH =========== */
+#splash{position:relative}
+#splash .hero{
+  position:absolute;inset:0;
+  background:
+    linear-gradient(180deg,rgba(14,13,11,.55) 0%,rgba(14,13,11,.88) 55%,var(--bg) 100%),
+    radial-gradient(90% 60% at 50% 15%, rgba(242,192,68,.14), transparent 65%),
+    linear-gradient(150deg,#2a241c,#0e0d0b);
+}
+#splash .inner{position:relative;z-index:2;display:flex;flex-direction:column;flex:1;padding:0 var(--pad) 26px}
+.splash-top{padding-top:calc(26px + env(safe-area-inset-top));text-align:center}
+.splash-head{margin-top:52px;text-align:center}
+.splash-head h1{font-size:42px}
+.splash-head .gold{color:var(--gold)}
+.splash-head p{color:var(--muted);font-size:14px;margin:14px auto 0;max-width:30ch}
+.roles{display:flex;flex-direction:column;gap:12px;margin-top:auto}
+.role{
+  display:flex;align-items:center;gap:14px;
+  padding:16px;border-radius:var(--radius);
+  background:rgba(23,21,18,.86);border:1px solid var(--line);
+  text-align:left;width:100%;
+  backdrop-filter:blur(8px);
+}
+.role .ic{
+  width:44px;height:44px;flex:none;border-radius:12px;
+  display:grid;place-items:center;
+  background:rgba(242,192,68,.1);color:var(--gold);
+}
+.role h3{font-size:16px}
+.role p{margin:3px 0 0;font-size:12.5px;color:var(--muted);line-height:1.35}
+.role .chev{color:var(--muted);margin-left:auto}
+.role.primary{border-color:var(--gold-dim)}
+.trust{display:flex;justify-content:center;gap:16px;margin-top:20px;color:var(--muted);font-size:11px}
+.trust span{display:flex;align-items:center;gap:5px}
+
+/* =========== LOGIN =========== */
+.login-art{
+  height:190px;flex:none;position:relative;
+  display:flex;align-items:flex-end;padding:var(--pad);
+}
+.login-art .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,13,11,.25),var(--bg))}
+.login-art .txt{position:relative;z-index:2}
+.login-art .txt h2{font-size:22px}
+.login-art .txt p{margin:6px 0 0;font-size:12.5px;color:var(--muted);max-width:30ch}
+.field{margin-top:16px}
+.field label{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--muted);margin-bottom:7px}
+.field label a{color:var(--gold);text-decoration:none;font-size:12px}
+.field input{
+  width:100%;height:48px;border-radius:11px;
+  background:var(--surface-2);border:1px solid var(--line);
+  color:var(--ink);padding:0 14px;outline:none;
+}
+.field input::placeholder{color:#5f5a52}
+.field input:focus{border-color:var(--gold-dim);box-shadow:0 0 0 3px rgba(242,192,68,.08)}
+.checkline{display:flex;align-items:center;gap:9px;margin-top:16px;font-size:13px;color:var(--muted)}
+.checkline input{accent-color:var(--gold);width:16px;height:16px}
+
+/* =========== BUSCA =========== */
+.search{
+  display:flex;align-items:center;gap:10px;
+  height:46px;border-radius:12px;padding:0 14px;
+  background:var(--surface-2);border:1px solid var(--line);
+  color:var(--muted);font-size:14px;
+}
+
+/* =========== CARROSSEL =========== */
+.rail{
+  display:flex;gap:12px;overflow-x:auto;
+  padding:0 var(--pad) 4px;
+  scroll-snap-type:x mandatory;scrollbar-width:none;
+}
+.rail::-webkit-scrollbar{display:none}
+.shot{
+  flex:none;width:76%;height:172px;border-radius:var(--radius);
+  scroll-snap-align:center;position:relative;
+  border:1px solid var(--line);
+  display:flex;align-items:flex-end;padding:14px;
+}
+.shot .lbl{position:relative;z-index:2}
+.shot .lbl b{display:block;font-size:15px}
+.shot .lbl span{font-size:12px;color:var(--muted)}
+.shot::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(180deg,transparent 35%,rgba(10,9,8,.9));z-index:1;
+}
+.dots{display:flex;justify-content:center;gap:6px;margin-top:12px}
+.dot{width:5px;height:5px;border-radius:50%;background:#3a352d}
+.dot.on{background:var(--gold);width:16px;border-radius:3px}
+
+/* =========== AVATARES =========== */
+.avatars{display:flex;gap:14px;overflow-x:auto;padding:0 var(--pad) 4px;scrollbar-width:none}
+.avatars::-webkit-scrollbar{display:none}
+.av{flex:none;width:62px;text-align:center}
+.av .pic{width:62px;height:62px;border-radius:50%;border:1px solid var(--line)}
+.av.on .pic{border:2px solid var(--gold)}
+.av span{display:block;font-size:11px;color:var(--muted);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* =========== DESTAQUE BARBEIRO =========== */
+.feature{position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line)}
+.feature .pic{height:230px}
+.feature .body{padding:16px;background:var(--surface)}
+.feature h3{font-size:21px;color:var(--gold)}
+.feature .role-txt{font-size:11.5px;color:var(--muted);margin:4px 0 10px}
+.feature p{margin:0;font-size:13.5px;color:#c8c2b8;line-height:1.55}
+
+/* =========== LISTA DE BARBEIROS =========== */
+.barber{
+  display:flex;gap:13px;padding:12px;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius);margin-bottom:11px;width:100%;text-align:left;align-items:center;
+}
+.barber .pic{width:84px;height:84px;border-radius:10px;flex:none}
+.barber h3{font-size:16px}
+.barber .sub{font-size:11.5px;color:var(--muted);margin:2px 0 8px}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{
+  font-size:10.5px;padding:4px 8px;border-radius:6px;
+  background:rgba(242,192,68,.08);color:var(--gold);border:1px solid rgba(242,192,68,.18);
+}
+.tag.plain{background:var(--surface-2);color:var(--muted);border-color:var(--line)}
+
+/* =========== PERFIL DO BARBEIRO =========== */
+.cover{height:150px;position:relative}
+.cover .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,13,11,.2),var(--bg))}
+.profile-head{margin-top:-46px;position:relative;z-index:3;display:flex;align-items:flex-end;gap:14px}
+.profile-head .pic{width:84px;height:84px;border-radius:14px;border:2px solid var(--gold);flex:none}
+.profile-head h2{font-size:20px}
+.profile-head .sub{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:8px;margin-top:20px}
+.tab{
+  flex:1;height:40px;border-radius:10px;font-size:13.5px;font-weight:500;
+  border:1px solid var(--line);background:var(--surface);color:var(--muted);
+}
+.tab.on{border-color:var(--gold);color:var(--gold);background:rgba(242,192,68,.07)}
+.tabpanel{display:none;margin-top:18px}
+.tabpanel.on{display:block}
+
+.svc{
+  display:flex;align-items:center;gap:12px;
+  padding:14px;border:1px solid var(--line);border-radius:12px;
+  background:var(--surface);margin-bottom:10px;width:100%;text-align:left;
+}
+.svc.on{border-color:var(--gold);background:rgba(242,192,68,.06)}
+.svc .n{flex:1}
+.svc .n b{display:block;font-size:14.5px;font-weight:600}
+.svc .n span{font-size:11.5px;color:var(--muted)}
+.svc .p{font-size:14px;font-weight:600;color:var(--gold)}
+.svc .mark{
+  width:20px;height:20px;border-radius:50%;border:1px solid var(--line);flex:none;
+  display:grid;place-items:center;font-size:11px;color:#17140D;
+}
+.svc.on .mark{background:var(--gold);border-color:var(--gold)}
+
+/* calendário */
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-head b{font-size:15px}
+.cal-nav{display:flex;gap:6px}
+.cal-nav button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--muted)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cal .wd{text-align:center;font-size:10.5px;color:var(--muted);padding-bottom:4px}
+.day{
+  aspect-ratio:1;border-radius:9px;display:grid;place-items:center;
+  font-size:13px;background:var(--surface-2);border:1px solid transparent;color:var(--ink);
+}
+.day.off{color:#4a453d;background:transparent}
+.day.free{border-color:rgba(242,192,68,.25)}
+.day.on{background:var(--gold);color:#17140D;font-weight:700}
+
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+.slot{
+  height:38px;border-radius:9px;font-size:12.5px;
+  background:var(--surface-2);border:1px solid var(--line);color:var(--ink);
+}
+.slot.on{background:var(--gold);color:#17140D;font-weight:600;border-color:var(--gold)}
+.slot:disabled{color:#4a453d;text-decoration:line-through;opacity:.55}
+
+.summary{border:1px solid var(--gold-dim);border-radius:12px;padding:14px;background:rgba(242,192,68,.05);margin-top:18px}
+.srow{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:var(--muted)}
+.srow b{color:var(--ink);font-weight:500}
+.srow.total{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;font-size:15px}
+.srow.total b{color:var(--gold);font-weight:700}
+
+.gallery{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gallery .g{aspect-ratio:1;border-radius:11px;border:1px solid var(--line)}
+.gallery .g:first-child{grid-column:span 2;aspect-ratio:16/10}
+
+/* =========== CONFIGURAÇÕES =========== */
+.group-title{font-size:12px;color:var(--gold);margin:24px 0 10px;display:flex;align-items:center;gap:7px;font-weight:600}
+.setting{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.setting:last-child{border-bottom:0}
+.setting .t{flex:1}
+.setting .t b{display:block;font-size:14px;font-weight:500}
+.setting .t span{font-size:11.5px;color:var(--muted)}
+.switch{width:44px;height:26px;border-radius:13px;background:var(--surface-2);border:1px solid var(--line);position:relative;flex:none;transition:.18s}
+.switch::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#6b6459;transition:.18s}
+.switch.on{background:rgba(242,192,68,.22);border-color:var(--gold-dim)}
+.switch.on::after{left:21px;background:var(--gold)}
+
+.hours{display:flex;flex-direction:column}
+.hour{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);font-size:13px}
+.hour:last-child{border-bottom:0}
+.hour .d{width:62px;color:var(--muted);font-size:12.5px}
+.hour input{
+  flex:1;height:34px;text-align:center;border-radius:8px;
+  background:var(--surface-2);border:1px solid var(--line);color:var(--ink);
+}
+.hour .sep{color:var(--muted);font-size:11px}
+
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric{border:1px solid var(--line);border-radius:12px;padding:13px;background:var(--surface)}
+.metric span{font-size:11.5px;color:var(--muted);display:block}
+.metric b{font-size:20px;color:var(--gold);display:block;margin-top:3px}
+.metric small{font-size:10.5px;color:var(--muted)}
+
+.appt{
+  display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  padding:13px;border:1px solid var(--line);border-radius:12px;
+  background:var(--surface);margin-bottom:10px;
+}
+.appt .ic{width:38px;height:38px;border-radius:10px;background:rgba(242,192,68,.1);color:var(--gold);display:grid;place-items:center;flex:none}
+.appt b{display:block;font-size:14px;font-weight:500}
+.appt span{font-size:11.5px;color:var(--muted)}
+.appt .chev{margin-left:auto;color:var(--muted)}
+
+/* =========== BOTTOM NAV =========== */
+.tabbar{
+  position:absolute;left:0;right:0;bottom:0;z-index:30;
+  display:flex;
+  background:rgba(14,13,11,.94);
+  backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.tabbar button{
+  flex:1;padding:10px 0 12px;display:flex;flex-direction:column;align-items:center;gap:4px;
+  color:#6c665c;font-size:10.5px;
+}
+.tabbar button.on{color:var(--gold)}
+.tabbar button svg{width:21px;height:21px}
+
+/* barra fixa de ação */
+.actionbar{
+  position:absolute;left:0;right:0;bottom:0;z-index:31;
+  padding:12px var(--pad);
+  padding-bottom:calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,transparent,rgba(14,13,11,.96) 28%);
+  display:flex;gap:10px;align-items:center;
+}
+.actionbar .price{font-size:12px;color:var(--muted);line-height:1.2}
+.actionbar .price b{display:block;font-size:18px;color:var(--gold)}
+
+/* toast */
+#toast{
+  position:absolute;left:50%;transform:translate(-50%,20px);
+  bottom:110px;z-index:60;
+  background:var(--surface-2);border:1px solid var(--gold-dim);
+  color:var(--ink);padding:12px 18px;border-radius:12px;font-size:13.5px;
+  opacity:0;pointer-events:none;transition:.22s;white-space:nowrap;
+  box-shadow:0 12px 30px rgba(0,0,0,.6);
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* ================= ACRÉSCIMOS (Firebase) ================= */
+[hidden]{display:none!important}
+input,select,textarea{color-scheme:dark}
+
+#toast{white-space:normal;max-width:88%;text-align:center;width:max-content}
+
+/* carregando */
+#boot{
+  position:absolute;inset:0;z-index:100;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+}
+.spin{width:26px;height:26px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--gold);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* mensagens */
+.err{color:#e58a7b;font-size:12.5px;margin:14px 0 0;min-height:1em;text-align:center}
+.warn{
+  background:rgba(229,138,123,.08);border:1px solid rgba(229,138,123,.35);color:#e9a79b;
+  border-radius:10px;padding:10px 12px;font-size:12px;margin-top:18px;text-align:left;line-height:1.45;
+}
+.banner{
+  background:rgba(242,192,68,.07);border:1px solid var(--gold-dim);color:#e6cf8f;
+  border-radius:12px;padding:12px 14px;font-size:13px;margin-bottom:6px;line-height:1.45;
+}
+.empty{text-align:center;color:var(--muted);font-size:13.5px;padding:26px 10px;line-height:1.5}
+
+/* formulários */
+.field select,.field textarea{
+  width:100%;border-radius:11px;background:var(--surface-2);border:1px solid var(--line);
+  color:var(--ink);padding:0 14px;outline:none;height:48px;
+}
+.field textarea{height:auto;padding:12px 14px;resize:none}
+.field select:focus,.field textarea:focus{border-color:var(--gold-dim);box-shadow:0 0 0 3px rgba(242,192,68,.08)}
+.row2{display:flex;gap:10px}
+.row2>.field{flex:1;min-width:0}
+.hint{font-size:11.5px;color:var(--muted);margin-top:6px}
+
+/* busca */
+.search input{flex:1;min-width:0;height:100%;background:none;border:0;outline:0;color:var(--ink)}
+.search input::placeholder{color:var(--muted)}
+
+/* iniciais no lugar da foto */
+.initials{display:grid;place-items:center;font-weight:700;color:var(--gold);letter-spacing:.5px}
+.av .initials{font-size:19px}
+.feature .initials{font-size:58px}
+.barber .initials{font-size:26px}
+.profile-head .initials{font-size:28px}
+
+/* status */
+.st{font-size:10.5px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--muted);white-space:nowrap;flex:none}
+.st.ok{color:var(--ok);border-color:rgba(95,191,126,.35);background:rgba(95,191,126,.08)}
+.st.wait{color:var(--gold);border-color:rgba(242,192,68,.3);background:rgba(242,192,68,.07)}
+.st.bad{color:#e58a7b;border-color:rgba(229,138,123,.35);background:rgba(229,138,123,.07)}
+
+/* cartão de agendamento com ações */
+.acard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px;margin-bottom:10px}
+.acard .top{display:flex;align-items:center;gap:12px}
+.acard .ic{width:38px;height:38px;border-radius:10px;background:rgba(242,192,68,.1);color:var(--gold);display:grid;place-items:center;flex:none}
+.acard .tx{flex:1;min-width:0}
+.acard .tx b{display:block;font-size:14px;font-weight:500}
+.acard .tx span{display:block;font-size:11.5px;color:var(--muted)}
+.acard .acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.acard .acts .btn{flex:1;min-width:110px}
+.btn-danger{border:1px solid rgba(229,138,123,.4);color:#e58a7b}
+.btn[disabled]{opacity:.55}
+
+/* serviços no painel do profissional */
+.svc.row{cursor:default}
+.mini{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);display:grid;place-items:center;flex:none;font-size:14px}
+.mini.bad{color:#e58a7b}
+
+/* horários de trabalho */
+.hour .switch{flex:none}
+.hour input[type=time]{min-width:0;padding:0 6px}
+.hour.fechado input{opacity:.35;pointer-events:none}
+
+/* notificações */
+.note{display:flex;gap:12px;padding:13px;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:10px;font-size:13.5px;line-height:1.45}
+.note .ic{width:34px;height:34px;border-radius:10px;background:rgba(242,192,68,.1);color:var(--gold);display:grid;place-items:center;flex:none}
+.link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+
+/* ================= ASSISTENTE VIRTUAL (chatbot) ================= */
+.bb-launcher{
+  position:absolute;right:16px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:40;
+  width:54px;height:54px;border-radius:50%;background:var(--gold);color:#17140D;
+  display:grid;place-items:center;box-shadow:0 8px 22px rgba(0,0,0,.55);transition:transform .15s;
+}
+.bb-launcher:active{transform:scale(.94)}
+.bb-launcher svg{width:26px;height:26px}
+#bb-panel{position:absolute;inset:0;z-index:80;display:flex;flex-direction:column;background:var(--bg)}
+.bb-mark{width:38px;height:38px;border-radius:50%;background:var(--gold);color:#17140D;display:grid;place-items:center;flex:none}
+.bb-mark svg{width:20px;height:20px}
+.bb-title{font-weight:700;font-size:16px;line-height:1.2}
+.bb-sub{font-size:11.5px;color:var(--muted);margin-top:1px}
+#bb-messages{
+  flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+  padding:16px var(--pad);display:flex;flex-direction:column;gap:10px;
+}
+#bb-messages::-webkit-scrollbar{display:none}
+.bb-row{display:flex}
+.bb-row.bb-bot{justify-content:flex-start}
+.bb-row.bb-me{justify-content:flex-end}
+.bb-bubble{
+  max-width:84%;padding:10px 13px;border-radius:14px;font-size:14px;line-height:1.45;
+  white-space:pre-wrap;overflow-wrap:anywhere;
+}
+.bb-bot .bb-bubble{background:var(--surface);border:1px solid var(--line);color:var(--ink);border-bottom-left-radius:4px}
+.bb-me .bb-bubble{background:var(--gold);color:#17140D;font-weight:500;border-bottom-right-radius:4px}
+.bb-choices{display:flex;flex-wrap:wrap;gap:8px;padding-left:2px}
+.bb-chip{
+  background:transparent;color:var(--gold);border:1px solid var(--gold-dim);
+  padding:9px 14px;border-radius:999px;font-size:13px;font-weight:600;text-align:left;
+  transition:background .15s,color .15s;
+}
+.bb-chip:active{background:var(--gold);color:#17140D}
+.bb-chip.bb-chip-danger{color:#e58a7b;border-color:rgba(229,138,123,.4)}
+.bb-chip.bb-chip-danger:active{background:#e58a7b;color:#17140D}
+.bb-chip:disabled{opacity:.4}
+.bb-datebox{display:flex;gap:8px;padding-left:2px}
+.bb-datebox input{
+  flex:1;min-width:0;height:44px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);
+  color:var(--ink);padding:0 12px;outline:none;
+}
+.bb-datebox input:focus{border-color:var(--gold-dim)}
+.bb-datebox button{background:var(--gold);color:#17140D;border-radius:10px;padding:0 16px;font-weight:700;font-size:13px}
+.bb-datebox button:disabled,.bb-datebox input:disabled{opacity:.45}
+.bb-typing{display:flex;gap:4px;padding:6px 4px}
+.bb-typing span{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:bb-blink 1.2s infinite ease-in-out}
+.bb-typing span:nth-child(2){animation-delay:.2s}
+.bb-typing span:nth-child(3){animation-delay:.4s}
+@keyframes bb-blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.bb-footer{
+  display:flex;gap:8px;padding:12px var(--pad);padding-bottom:calc(12px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--line);background:var(--bg);flex:none;
+}
+#bb-input{
+  flex:1;min-width:0;height:46px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);
+  color:var(--ink);padding:0 16px;outline:none;font-size:16px;   /* 16px evita o zoom automático no iPhone */
+}
+#bb-input::placeholder{color:var(--muted)}
+#bb-input:focus{border-color:var(--gold-dim)}
+#bb-send{width:46px;height:46px;border-radius:50%;background:var(--gold);color:#17140D;display:grid;place-items:center;flex:none}
+#bb-send svg{width:18px;height:18px}
+#bb-send:disabled{opacity:.45}
+</style>
+</head>
+
+<body>
+<div id="phone">
+
+<!-- ============ CARREGANDO ============ -->
+<div id="boot"><span class="logo" style="font-size:22px">Barb<b>Tech</b></span><div class="spin"></div></div>
+
+<!-- ============ SPLASH ============ -->
+<section class="screen active" id="s-splash">
+  <div class="hero"></div>
+  <div class="inner">
+    <div class="splash-top"><span class="logo">Barb<b>Tech</b></span></div>
+
+    <div class="splash-head">
+      <h1 class="display">The Precision <span class="gold">Atelier</span></h1>
+      <p>A barbearia clássica com a precisão de um agendamento digital. Escolha por onde você entra.</p>
+      <p class="warn" id="cfgWarn" hidden></p>
+    </div>
+
+    <div class="roles">
+      <button class="role primary" onclick="go('s-login','cliente')">
+        <span class="ic">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+        </span>
+        <span>
+          <h3>Sou cliente</h3>
+          <p>Encontre barbeiros, veja estilos e marque seu horário.</p>
+        </span>
+        <span class="chev">›</span>
+      </button>
+
+      <button class="role" onclick="go('s-login','pro')">
+        <span class="ic">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.1 8.1 20 20M20 4 8.1 15.9"/></svg>
+        </span>
+        <span>
+          <h3>Sou profissional</h3>
+          <p>Gerencie sua agenda, seus serviços e seus clientes.</p>
+        </span>
+        <span class="chev">›</span>
+      </button>
+    </div>
+
+    <div class="trust">
+      <span>✓ Barbeiros verificados</span>
+      <span>✓ Agenda em tempo real</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LOGIN ============ -->
+<section class="screen" id="s-login">
+  <div class="scroll">
+    <div class="login-art ph">
+      <div class="veil"></div>
+      <div class="txt">
+        <h2>Bem-vindo de volta</h2>
+        <p id="loginRole">Acesse sua conta para gerenciar seus agendamentos.</p>
+      </div>
+    </div>
+
+    <div class="pad" style="padding-bottom:30px">
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input id="email" type="email" placeholder="seu@email.com" autocomplete="email">
+      </div>
+
+      <div class="field">
+        <label for="senha">Senha <a href="#" onclick="esqueciSenha();return false">Esqueci minha senha</a></label>
+        <input id="senha" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+
+      <label class="checkline"><input type="checkbox" id="manter" checked> Manter conectado</label>
+
+      <p class="err" id="loginErr"></p>
+
+      <button class="btn btn-gold" id="btnEntrar" style="margin-top:12px" onclick="entrar()">Entrar no atelier</button>
+      <button class="btn btn-ghost" id="btnCriar" style="margin-top:10px" onclick="criarConta()">Criar nova conta</button>
+
+      <p class="tiny muted" style="text-align:center;margin-top:22px">
+        Ao entrar você concorda com os termos e a política de privacidade.
+      </p>
+      <button class="tiny muted" style="display:block;margin:14px auto 0" onclick="show('s-splash')">← Trocar tipo de acesso</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CADASTRO DO PROFISSIONAL ============ -->
+<section class="screen" id="s-cadpro">
+  <header class="appbar">
+    <button class="back" onclick="voltarCadPro()">‹ Voltar</button>
+    <span class="sp"></span>
+  </header>
+
+  <div class="scroll">
+    <div class="pad" style="padding-top:18px;padding-bottom:40px">
+      <h1 class="display" style="font-size:25px" id="cpTitle">Cadastro do profissional</h1>
+      <p class="tiny muted" style="margin-top:8px">Nome, telefone e estado aparecem no seu perfil público. CPF, CNPJ e endereço ficam privados.</p>
+
+      <div id="cpAcesso">
+        <div class="group-title">Acesso</div>
+        <div class="card">
+          <div class="field" style="margin-top:0"><label for="cp-email">E-mail</label><input id="cp-email" type="email" autocomplete="email" placeholder="seu@email.com"></div>
+          <div class="field"><label for="cp-senha">Senha (mínimo 6 caracteres)</label><input id="cp-senha" type="password" autocomplete="new-password" placeholder="••••••••"></div>
+        </div>
+      </div>
+
+      <div class="group-title">Dados pessoais</div>
+      <div class="card">
+        <div class="field" style="margin-top:0"><label for="cp-nome">Nome</label><input id="cp-nome" autocomplete="name"></div>
+        <div class="row2">
+          <div class="field"><label for="cp-tel">Telefone</label><input id="cp-tel" type="tel" inputmode="tel" placeholder="(11) 99999-0000"></div>
+          <div class="field"><label for="cp-uf">Estado</label><select id="cp-uf"></select></div>
+        </div>
+      </div>
+
+      <div class="group-title">Documento e endereço (privados)</div>
+      <div class="card">
+        <div class="row2">
+          <div class="field" style="margin-top:0"><label for="cp-cpf">CPF</label><input id="cp-cpf" inputmode="numeric" placeholder="000.000.000-00"></div>
+          <div class="field" style="margin-top:0"><label for="cp-cnpj">CNPJ</label><input id="cp-cnpj" inputmode="numeric" placeholder="opcional"></div>
+        </div>
+        <div class="hint">Informe pelo menos um dos dois.</div>
+        <div class="field"><label for="cp-rua">Rua e número</label><input id="cp-rua" autocomplete="street-address"></div>
+        <div class="row2">
+          <div class="field"><label for="cp-cep">CEP</label><input id="cp-cep" inputmode="numeric" placeholder="00000-000"></div>
+          <div class="field"><label for="cp-bairro">Bairro</label><input id="cp-bairro"></div>
+        </div>
+        <div class="field"><label for="cp-comp">Complemento</label><input id="cp-comp" placeholder="opcional"></div>
+      </div>
+
+      <div class="group-title">Atendimento</div>
+      <div class="card">
+        <div class="setting" style="padding:0">
+          <div class="t"><b>Atendo em domicílio</b><span>O cliente poderá pedir que você vá até ele</span></div>
+          <div class="switch" id="cp-dom" onclick="sw(this)"></div>
+        </div>
+      </div>
+
+      <button class="btn btn-gold" id="cpBtn" style="margin-top:24px" onclick="cadastrarPro()">Criar conta profissional</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOME CLIENTE ============ -->
+<section class="screen" id="s-home">
+  <header class="appbar">
+    <span class="logo">Barb<b>Tech</b></span>
+    <span class="sp"></span>
+    <button class="iconbtn bell" onclick="abrirNotif()" aria-label="Notificações">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+    </button>
+  </header>
+
+  <div class="scroll pb-nav">
+    <div class="pad" style="padding-top:16px">
+      <div class="search" onclick="irBusca()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        Procurar serviço ou barbeiro
+      </div>
+      <h2 class="section-title">Em destaque</h2>
+    </div>
+
+    <div class="rail" id="rail">
+      <div class="shot ph"><span class="lbl"><b>Fade clássico</b><span>Tesoura e navalha</span></span></div>
+      <div class="shot ph"><span class="lbl"><b>Barboterapia</b><span>Toalha quente</span></span></div>
+      <div class="shot ph"><span class="lbl"><b>Atelier noturno</b><span>Atendimento com hora marcada</span></span></div>
+    </div>
+    <div class="dots"><i class="dot on"></i><i class="dot"></i><i class="dot"></i></div>
+
+    <div class="pad"><h2 class="section-title">Especialistas</h2></div>
+    <div class="avatars" id="homeAvatars"></div>
+
+    <div class="pad" style="margin-top:18px">
+      <div id="homeFeature"></div>
+
+      <h2 class="section-title">Seu próximo horário</h2>
+      <div id="homeNext"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LISTA DE BARBEIROS ============ -->
+<section class="screen" id="s-barbers">
+  <header class="appbar">
+    <span class="logo">Barb<b>Tech</b></span>
+    <span class="sp"></span>
+    <button class="iconbtn" id="btnFiltro" onclick="toggleFiltro()" aria-label="Filtrar só atendimento em casa">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M7 12h10M10 18h4"/></svg>
+    </button>
+  </header>
+
+  <div class="scroll pb-nav">
+    <div class="pad" style="padding-top:18px">
+      <h1 class="display" style="font-size:28px">Barbeiros</h1>
+      <p class="muted tiny" style="margin-top:8px" id="barbersSub"></p>
+
+      <div class="search" style="margin-top:16px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="busca" placeholder="Procurar serviço ou barbeiro" oninput="renderBarbers()">
+      </div>
+      <p class="tiny muted" id="filtroInfo" style="margin-top:10px" hidden>Mostrando só quem atende em domicílio. Toque no filtro para limpar.</p>
+
+      <div style="margin-top:20px" id="barbersList"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PERFIL DO BARBEIRO / AGENDA ============ -->
+<section class="screen" id="s-barber">
+  <header class="appbar">
+    <button class="back" onclick="voltarBarber()">‹ Voltar</button>
+    <span class="sp"></span>
+  </header>
+
+  <div class="scroll" style="padding-bottom:140px">
+    <div class="cover ph"><div class="veil"></div></div>
+
+    <div class="pad">
+      <div class="profile-head">
+        <div class="pic ph ph-face initials" id="bAvatar"></div>
+        <div style="padding-bottom:4px">
+          <h2 id="bName"></h2>
+          <div class="sub" id="bSub"></div>
+        </div>
+      </div>
+
+      <div class="banner" id="bBanner" style="margin-top:18px" hidden></div>
+
+      <div class="tabs">
+        <button class="tab" onclick="tab(this,'p-svc')">Serviços</button>
+        <button class="tab on" onclick="tab(this,'p-agenda')">Agenda</button>
+        <button class="tab" onclick="tab(this,'p-sobre')">Sobre</button>
+      </div>
+
+      <!-- serviços -->
+      <div class="tabpanel" id="p-svc">
+        <div id="svcList"></div>
+
+      </div>
+
+      <!-- agenda -->
+      <div class="tabpanel on" id="p-agenda">
+        <div class="card">
+          <div class="cal-head">
+            <b id="calTitle"></b>
+            <span class="cal-nav">
+              <button id="calPrev" onclick="mesCal(-1)" aria-label="Mês anterior">‹</button>
+              <button id="calNext" onclick="mesCal(1)" aria-label="Próximo mês">›</button>
+            </span>
+          </div>
+          <div class="cal" id="cal"></div>
+          <p class="tiny muted" style="margin:12px 0 0;display:flex;align-items:center;gap:6px">
+            <i style="width:8px;height:8px;border-radius:2px;border:1px solid rgba(242,192,68,.5);display:inline-block"></i>
+            dias em que o profissional atende
+          </p>
+        </div>
+
+        <h3 style="font-size:15px;margin:22px 0 12px">Horários de <span id="dayLabel">—</span></h3>
+        <div class="slots" id="slots"></div>
+
+        <div class="card" style="margin-top:18px" id="domCard" hidden>
+          <div class="setting" style="padding:0">
+            <div class="t"><b>Atendimento em casa</b><span id="domTxt"></span></div>
+            <div class="switch" id="domSw" onclick="sw(this);domic(this)"></div>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="srow"><span>Serviço</span><b id="sSvc">—</b></div>
+          <div class="srow"><span>Data e hora</span><b id="sWhen">—</b></div>
+          <div class="srow"><span>Duração</span><b id="sDur">—</b></div>
+          <div class="srow" id="rowDom" style="display:none"><span>Deslocamento</span><b id="sDomTaxa"></b></div>
+          <div class="srow total"><span>Total</span><b id="sTotal">—</b></div>
+        </div>
+      </div>
+
+      <!-- sobre -->
+      <div class="tabpanel" id="p-sobre">
+        <p style="margin:0;font-size:14px;color:#c8c2b8;line-height:1.6" id="bSobre"></p>
+        <div class="metrics" style="margin-top:18px" id="bMetrics"></div>
+
+        <h3 style="font-size:15px;margin:24px 0 12px">Onde fica</h3>
+        <div class="card" id="bLocal"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="actionbar">
+    <div class="price">Total<b id="sTotal2">—</b></div>
+    <button class="btn btn-gold" id="btnConfirmar" style="flex:1;width:auto" onclick="confirmar()">Confirmar agendamento</button>
+  </div>
+</section>
+
+<!-- ============ MEUS AGENDAMENTOS (CLIENTE) ============ -->
+<section class="screen" id="s-meus">
+  <header class="appbar">
+    <span class="logo">Barb<b>Tech</b></span>
+    <span class="sp"></span>
+    <button class="iconbtn bell" onclick="abrirNotif()" aria-label="Notificações">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+    </button>
+  </header>
+
+  <div class="scroll pb-nav">
+    <div class="pad" style="padding-top:18px">
+      <h1 class="display" style="font-size:28px">Meus horários</h1>
+      <div class="group-title">Próximos</div>
+      <div id="meusProx"></div>
+      <div class="group-title">Anteriores e cancelados</div>
+      <div id="meusAnt"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ NOTIFICAÇÕES ============ -->
+<section class="screen" id="s-notif">
+  <header class="appbar">
+    <button class="back" onclick="voltarNotif()">‹ Voltar</button>
+    <span class="sp"></span>
+    <button class="btn btn-line btn-sm" onclick="limparNotif()">Limpar tudo</button>
+  </header>
+
+  <div class="scroll pb-nav">
+    <div class="pad" style="padding-top:18px">
+      <h1 class="display" style="font-size:28px">Notificações</h1>
+      <div style="margin-top:18px" id="notifList"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PERFIL DO CLIENTE ============ -->
+<section class="screen" id="s-me">
+  <header class="appbar">
+    <span class="logo">Barb<b>Tech</b></span>
+    <span class="sp"></span>
+    <button class="iconbtn bell" onclick="abrirNotif()" aria-label="Notificações">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+    </button>
+  </header>
+
+  <div class="scroll pb-nav">
+    <div class="pad" style="padding-top:18px">
+      <div class="banner" id="meBanner" hidden>Complete seu perfil para poder agendar horários. Os campos marcados com * são obrigatórios.</div>
+
+      <div style="display:flex;align-items:center;gap:14px;margin-top:14px">
+        <div class="ph ph-face initials" id="meAvatar" style="width:66px;height:66px;border-radius:16px;border:2px solid var(--gold);font-size:24px"></div>
+        <div style="min-width:0">
+          <h2 style="font-size:19px" id="meNome">Seu perfil</h2>
+          <div class="tiny muted" id="meEmail" style="overflow:hidden;text-overflow:ellipsis"></div>
+        </div>
+      </div>
+
+      <div class="group-title">Dados pessoais</div>
+      <div class="card">
+        <div class="field" style="margin-top:0"><label for="me-nome">Nome *</label><input id="me-nome" autocomplete="name"></div>
+        <div class="row2">
+          <div class="field"><label for="me-tel">Telefone *</label><input id="me-tel" type="tel" inputmode="tel" placeholder="(11) 99999-0000"></div>
+          <div class="field"><label for="me-uf">Estado *</label><select id="me-uf"></select></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="me-cpf">CPF *</label><input id="me-cpf" inputmode="numeric" placeholder="000.000.000-00"></div>
+          <div class="field"><label for="me-cnpj">CNPJ</label><input id="me-cnpj" inputmode="numeric" placeholder="opcional"></div>
+        </div>
+      </div>
+
+      <div class="group-title">Endereço de atendimento</div>
+      <div class="card">
+        <div class="field" style="margin-top:0"><label for="me-rua">Rua e número *</label><input id="me-rua" autocomplete="street-address"></div>
+        <div class="row2">
+          <div class="field"><label for="me-cep">CEP *</label><input id="me-cep" inputmode="numeric" placeholder="00000-000"></div>
+          <div class="field"><label for="me-bairro">Bairro *</label><input id="me-bairro"></div>
+        </div>
+        <div class="field"><label for="me-comp">Complemento</label><input id="me-comp" placeholder="opcional"></div>
+        <div class="hint">Só é compartilhado com o profissional quando você pede atendimento em casa.</div>
+      </div>
+
+      <div class="group-title">Condição</div>
+      <div class="card">
+        <div class="field" style="margin-top:0"><label for="me-cond">Informação que o profissional deve saber</label><input id="me-cond" placeholder="opcional (ex.: acessibilidade, alergia a produtos)"></div>
+      </div>
+
+      <button class="btn btn-gold" id="meBtn" style="margin-top:22px" onclick="salvarPerfil()">Salvar perfil</button>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="sair()">Sair da conta</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ AGENDA DO PROFISSIONAL ============ -->
+<section class="screen" id="s-pagenda">
+  <header class="appbar">
+    <span class="logo">Barb<b>Tech</b></span>
+    <span class="sp"></span>
+    <button class="iconbtn bell" onclick="abrirNotif()" aria-label="Notificações">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+    </button>
+  </header>
+
+  <div class="scroll pb-nav">
+    <div class="pad" style="padding-top:18px">
+      <h1 class="display" style="font-size:28px">Minha agenda</h1>
+      <div class="metrics" style="margin-top:18px" id="pMetrics"></div>
+
+      <div class="group-title">Próximos atendimentos</div>
+      <div id="pProx"></div>
+      <div class="group-title">Anteriores e cancelados</div>
+      <div id="pAnt"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PAINEL DO PROFISSIONAL ============ -->
+<section class="screen" id="s-pro">
+  <header class="appbar">
+    <span class="logo">Barb<b>Tech</b></span>
+    <span class="sp"></span>
+    <button class="btn btn-sm btn-ghost" onclick="sair()">Sair</button>
+  </header>
+
+  <div class="scroll pb-nav">
+    <div class="pad" style="padding-top:18px">
+      <h1 class="display" style="font-size:25px">Painel do profissional</h1>
+      <p class="tiny muted" style="margin-top:8px">Tudo o que o cliente vê quando abre o seu perfil.</p>
+
+      <div class="card" style="margin-top:20px;padding:0;overflow:hidden">
+        <div class="ph" style="height:70px"></div>
+        <div style="padding:16px;display:flex;align-items:center;gap:13px;margin-top:-38px;position:relative">
+          <div class="ph ph-face initials" id="prAvatar" style="width:64px;height:64px;border-radius:14px;border:2px solid var(--gold);flex:none;font-size:22px"></div>
+          <div style="padding-top:34px;min-width:0">
+            <h2 style="font-size:17px" id="prNome">—</h2>
+            <div class="tiny muted" id="prSub"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group-title">Dados do perfil</div>
+      <div class="card">
+        <div class="field" style="margin-top:0"><label for="pr-nome">Nome</label><input id="pr-nome"></div>
+        <div class="row2">
+          <div class="field"><label for="pr-tel">Telefone</label><input id="pr-tel" type="tel" inputmode="tel"></div>
+          <div class="field"><label for="pr-uf">Estado</label><select id="pr-uf"></select></div>
+        </div>
+      </div>
+
+      <div class="group-title">Sobre mim</div>
+      <div class="card">
+        <textarea id="pr-sobre" rows="4" maxlength="280" placeholder="Conte sua história em poucas linhas — é o primeiro texto que o cliente lê."
+          style="width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:12px;resize:none;outline:none"></textarea>
+        <div class="tiny muted" style="margin-top:8px">Até 280 caracteres.</div>
+      </div>
+
+      <div class="group-title">Serviços</div>
+      <div id="prServicos"></div>
+      <div class="card" style="margin-top:6px">
+        <div class="field" style="margin-top:0"><label for="sv-nome" id="svTitulo">Novo serviço</label><input id="sv-nome" placeholder="Ex.: Corte masculino"></div>
+        <div class="row2">
+          <div class="field"><label for="sv-dur">Duração (min)</label><input id="sv-dur" type="number" inputmode="numeric" min="5" step="5" placeholder="45"></div>
+          <div class="field"><label for="sv-preco">Preço (R$)</label><input id="sv-preco" type="text" inputmode="decimal" autocomplete="off" placeholder="59,00"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px">
+          <button class="btn btn-line" id="svBtn" onclick="salvarServico()">Adicionar serviço</button>
+          <button class="btn btn-ghost" id="svCancel" onclick="limparServico()" hidden style="width:auto;padding:0 16px">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="group-title">Agenda de trabalho</div>
+      <div class="card hours" id="prHoras"></div>
+
+      <div class="group-title">Atendimento em domicílio</div>
+      <div class="card">
+        <div class="setting" style="padding:0">
+          <div class="t"><b>Vou até o cliente</b><span id="prDomTxt"></span></div>
+          <div class="switch" id="pr-dom" onclick="sw(this)"></div>
+        </div>
+      </div>
+
+      <div class="group-title">Barbearia</div>
+      <div class="card">
+        <div class="field" style="margin-top:0">
+          <label for="pr-barb">Onde você atende</label>
+          <select id="pr-barb" onchange="barbSelecionada()"></select>
+        </div>
+        <div id="barbForm" hidden>
+          <div class="field"><label for="bb-nome">Nome da barbearia</label><input id="bb-nome"></div>
+          <div class="field"><label for="bb-cnpj">CNPJ</label><input id="bb-cnpj" inputmode="numeric"></div>
+          <div class="field"><label for="bb-rua">Logradouro</label><input id="bb-rua"></div>
+          <div class="row2">
+            <div class="field"><label for="bb-bairro">Bairro</label><input id="bb-bairro"></div>
+            <div class="field"><label for="bb-comp">Complemento</label><input id="bb-comp"></div>
+          </div>
+        </div>
+        <div class="hint" id="barbHint"></div>
+      </div>
+
+      <div class="group-title">Documento e endereço (privados)</div>
+      <div class="card">
+        <div class="row2">
+          <div class="field" style="margin-top:0"><label for="pr-cpf">CPF</label><input id="pr-cpf" inputmode="numeric"></div>
+          <div class="field" style="margin-top:0"><label for="pr-cnpj">CNPJ</label><input id="pr-cnpj" inputmode="numeric"></div>
+        </div>
+        <div class="field"><label for="pr-rua">Rua e número</label><input id="pr-rua"></div>
+        <div class="row2">
+          <div class="field"><label for="pr-cep">CEP</label><input id="pr-cep" inputmode="numeric"></div>
+          <div class="field"><label for="pr-bairro">Bairro</label><input id="pr-bairro"></div>
+        </div>
+        <div class="field"><label for="pr-comp">Complemento</label><input id="pr-comp"></div>
+      </div>
+
+      <button class="btn btn-gold" id="prBtn" style="margin-top:24px" onclick="salvarPro()">Salvar alterações</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TABBAR CLIENTE ============ -->
+<nav class="tabbar" id="tabbar" hidden>
+  <button data-go="s-home" class="on" onclick="show('s-home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1Z"/></svg>
+    Início
+  </button>
+  <button data-go="s-barbers" onclick="show('s-barbers')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.1 8.1 20 20M20 4 8.1 15.9"/></svg>
+    Barbeiros
+  </button>
+  <button data-go="s-meus" onclick="show('s-meus')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+    Agenda
+  </button>
+  <button data-go="s-me" onclick="show('s-me')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+    Perfil
+  </button>
+</nav>
+
+<!-- ============ TABBAR PROFISSIONAL ============ -->
+<nav class="tabbar" id="tabbar-pro" hidden>
+  <button data-go="s-pagenda" class="on" onclick="show('s-pagenda')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+    Agenda
+  </button>
+  <button data-go="s-pro" onclick="show('s-pro')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+    Painel
+  </button>
+</nav>
+
+<!-- ============ ASSISTENTE VIRTUAL (chatbot) ============ -->
+<button class="bb-launcher" id="bb-launcher" hidden aria-label="Abrir o assistente virtual" aria-haspopup="dialog">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/></svg>
+</button>
+<section id="bb-panel" role="dialog" aria-label="Assistente virtual BarbTech" hidden>
+  <header class="appbar">
+    <span class="bb-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg>
+    </span>
+    <div style="min-width:0">
+      <div class="bb-title">Assistente BarbTech</div>
+      <div class="bb-sub">agendamentos e dúvidas</div>
+    </div>
+    <span class="sp"></span>
+    <button class="iconbtn" id="bb-close" aria-label="Fechar o assistente">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </header>
+  <div id="bb-messages" aria-live="polite"></div>
+  <form class="bb-footer" id="bb-form" autocomplete="off">
+    <input id="bb-input" type="text" maxlength="500" placeholder="Digite sua dúvida..." enterkeyhint="send" aria-label="Mensagem">
+    <button id="bb-send" type="submit" aria-label="Enviar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+    </button>
+  </form>
+</section>
+
+<div id="toast"></div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
