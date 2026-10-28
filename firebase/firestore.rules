@@ -1,0 +1,236 @@
+rules_version = '2';
+
+// BarbTech - Regras de segurança do Firestore (clientes e profissionais separados)
+// Cole em Firestore Database > Regras > Publicar
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Funções auxiliares ----------
+    function logado() {
+      return request.auth != null;
+    }
+
+    function dono(uid) {
+      return logado() && request.auth.uid == uid;
+    }
+
+    function existeCliente(uid) {
+      return exists(/databases/$(database)/documents/clientes/$(uid));
+    }
+
+    function existeProfissional(uid) {
+      return exists(/databases/$(database)/documents/profissionais/$(uid));
+    }
+
+    function ehProfissional() {
+      return logado() && existeProfissional(request.auth.uid);
+    }
+
+    function ehCliente() {
+      return logado() && existeCliente(request.auth.uid);
+    }
+
+    // Cliente que já completou o perfil na tela de personalização
+    function clienteCompleto() {
+      return ehCliente()
+          && get(/databases/$(database)/documents/clientes/$(request.auth.uid)).data.perfilCompleto == true;
+    }
+
+    // Limite de tamanho dos textos (o app já limita; aqui é a garantia no servidor)
+    function txt(d, k, max) {
+      return !(k in d) || (d[k] is string && d[k].size() <= max);
+    }
+
+    function limites(d) {
+      return txt(d, 'nome', 80) && txt(d, 'telefone', 20) && txt(d, 'estado', 2)
+          && txt(d, 'cpf', 14) && txt(d, 'cnpj', 18)
+          && txt(d, 'cepResi', 9) && txt(d, 'cidadeResidencia', 60) && txt(d, 'logradouroResidencia', 100)
+          && txt(d, 'bairroResidencia', 60) && txt(d, 'complementoResidencia', 60)
+          && txt(d, 'condicao', 200) && txt(d, 'sobre', 500)
+          && txt(d, 'cep', 9) && txt(d, 'cidade', 60) && txt(d, 'logradouro', 100)
+          && txt(d, 'bairro', 60) && txt(d, 'complemento', 60);
+    }
+
+    function promocaoValida(d) {
+      return d.tipo in ['PROMOCAO', 'NOVIDADE']
+          && d.titulo is string && d.titulo.size() > 0 && d.titulo.size() <= 60
+          && d.descricao is string && d.descricao.size() <= 200
+          && d.desconto is number && d.desconto >= 0 && d.desconto <= 100;
+    }
+
+    // ---------- clientes (tudo privado, só o dono lê) ----------
+    // O ID do documento é o uid do Firebase Authentication.
+    // É criado na tela de cadastro do cliente (já completo) ou, em contas antigas,
+    // com perfilCompleto = false e preenchido depois no perfil.
+    match /clientes/{uid} {
+      allow read: if dono(uid);
+      allow create: if dono(uid)
+                    && !existeProfissional(uid)
+                    && request.resource.data.perfilCompleto is bool
+                    && limites(request.resource.data);
+      allow update: if dono(uid)
+                    && limites(request.resource.data)
+                    && (!('fotoUrl' in request.resource.data) || request.resource.data.fotoUrl.size() <= 60000);
+      allow delete: if dono(uid);   // LGPD: o titular pode excluir os próprios dados
+
+      // Banner do cliente (imagem reduzida no aparelho)
+      match /midia/{doc} {
+        allow read: if dono(uid);
+        allow create, update: if dono(uid) && request.resource.data.dataUrl.size() <= 300000;
+        allow delete: if dono(uid);
+      }
+    }
+
+    // ---------- profissionais (perfil público) ----------
+    // Aqui ficam só os dados que o cliente pode ver ao escolher o barbeiro. Um profissional NÃO lê o perfil de outro:
+    // só clientes (para escolher quem atende) e o próprio dono.
+    match /profissionais/{uid} {
+      allow read: if ehCliente() || dono(uid);
+      allow create: if dono(uid) && !existeCliente(uid) && limites(request.resource.data);
+      allow update: if dono(uid)
+                    && limites(request.resource.data)
+                    && (!('fotoUrl' in request.resource.data) || request.resource.data.fotoUrl.size() <= 60000);
+      allow delete: if dono(uid);
+
+      // Banner do profissional: clientes e o dono veem, só o dono troca
+      match /midia/{doc} {
+        allow read: if ehCliente() || dono(uid);
+        allow create, update: if dono(uid) && request.resource.data.dataUrl.size() <= 300000;
+        allow delete: if dono(uid);
+      }
+
+      // Dados sensíveis do profissional (CPF, CNPJ, endereço residencial)
+      match /privado/{doc} {
+        allow read, delete: if dono(uid);
+        allow create, update: if dono(uid) && limites(request.resource.data);
+      }
+    }
+
+    // ---------- agendas (1:1 com o profissional, ID = uid do profissional) ----------
+    match /agendas/{uid} {
+      allow read: if ehCliente() || dono(uid);
+      allow create: if dono(uid) && !existeCliente(uid);
+      allow update: if dono(uid);   // o profissional salva os horários de trabalho (gerenciarAgenda)
+      allow delete: if dono(uid);
+    }
+
+    // ---------- barbearias ----------
+    // Cliente vê todas (para saber onde ir); o profissional vê só a barbearia da qual é dono.
+    match /barbearias/{id} {
+      allow read: if ehCliente() || dono(resource.data.donoId);
+      allow create: if ehProfissional()
+                    && request.resource.data.donoId == request.auth.uid
+                    && limites(request.resource.data);
+      allow update: if dono(resource.data.donoId) && limites(request.resource.data);
+      allow delete: if dono(resource.data.donoId);
+    }
+
+    // ---------- promocoes (destaques: novidades e promoções do profissional) ----------
+    // Clientes veem; o profissional só vê as próprias; só o dono cria, altera e apaga.
+    match /promocoes/{id} {
+      allow read: if ehCliente() || dono(resource.data.profissionalId);
+      allow create: if ehProfissional()
+                    && dono(request.resource.data.profissionalId)
+                    && promocaoValida(request.resource.data);
+      allow update: if dono(resource.data.profissionalId)
+                    && dono(request.resource.data.profissionalId)
+                    && promocaoValida(request.resource.data);
+      allow delete: if dono(resource.data.profissionalId);
+    }
+
+    // ---------- servicos ----------
+    match /servicos/{id} {
+      allow read: if ehCliente() || dono(resource.data.profissionalId);
+      allow create: if ehProfissional()
+                    && dono(request.resource.data.profissionalId);
+      allow update, delete: if dono(resource.data.profissionalId);
+    }
+
+    // ---------- agendamentos ----------
+    match /agendamentos/{id} {
+      allow read: if dono(resource.data.clienteId)
+                  || dono(resource.data.profissionalId);
+      allow create: if clienteCompleto()
+                    && dono(request.resource.data.clienteId)
+                    && request.resource.data.status == 'PENDENTE'
+                    && request.resource.data.localAtendimento in ['BARBEARIA', 'DOMICILIO'];
+      // Cada lado só mexe no que lhe cabe. Assim ninguém altera valores (o faturamento do profissional
+      // sai desses campos) nem o cliente marca o próprio atendimento como "concluído".
+      allow update: if (dono(resource.data.clienteId)
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['data', 'horario', 'status'])
+                        && request.resource.data.status in ['CANCELADO', 'REMARCADO'])
+                    || (dono(resource.data.profissionalId)
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'iniciadoEm', 'concluidoEm', 'duracaoReal']));
+      allow delete: if false;
+    }
+
+    // ---------- horariosOcupados ----------
+    // ID = profissionalId_AAAAMMDD_HHmm. Como só existe "create" (sem update),
+    // dois clientes não conseguem reservar o mesmo horário.
+    match /horariosOcupados/{slot} {
+      allow read: if logado();
+      allow create: if clienteCompleto()
+                    && dono(request.resource.data.clienteId);
+      allow update: if false;
+      allow delete: if dono(resource.data.clienteId)
+                    || dono(resource.data.profissionalId);
+    }
+
+    // ---------- dispositivos (token do celular para notificação push) ----------
+    // O ID começa com o uid do dono. Quem ENVIA o push é a Cloud Function (Admin SDK, ignora estas regras).
+    match /dispositivos/{id} {
+      allow read, delete: if dono(resource.data.uid);
+      allow create, update: if dono(request.resource.data.uid)
+                            && id.matches(request.auth.uid + '_.*');
+    }
+
+    // ---------- consentimentos (LGPD): aceite da política e permissões do titular; só o dono lê e grava ----------
+    match /consentimentos/{uid} {
+      allow read, delete: if dono(uid);
+      allow create, update: if dono(uid)
+                            && request.resource.data.versao is string && request.resource.data.versao.size() <= 20
+                            && request.resource.data.aceitoEm is string
+                            && request.resource.data.localizacao is bool
+                            && request.resource.data.condicao is bool;
+    }
+
+    // ---------- coleções do serviço de segurança: nenhum cliente (app) acessa; só o Admin SDK do backend ----------
+    // ---------- recuperacao (cofre do código de recuperação) ----------
+    // ID = e-mail da conta, em minúsculas. Guarda só dados criptografados no aparelho (a senha, trancada com o código).
+    // Qualquer um pode LER um cofre se souber o e-mail (é assim que a recuperação funciona antes do login), mas sem o
+    // código de 100 bits ele não abre. Ninguém lista a coleção. Só o dono (mesmo e-mail e uid) cria, troca e apaga.
+    match /recuperacao/{email} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if logado()
+                    && request.auth.token.email != null
+                    && email == request.auth.token.email.lower()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.keys().hasOnly(['uid', 'v', 'sal', 'iv', 'ct', 'criadoEm'])
+                    && request.resource.data.ct is string && request.resource.data.ct.size() <= 200
+                    && request.resource.data.sal.size() <= 40 && request.resource.data.iv.size() <= 40;
+      allow update: if logado()
+                    && resource.data.uid == request.auth.uid
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.keys().hasOnly(['uid', 'v', 'sal', 'iv', 'ct', 'criadoEm'])
+                    && request.resource.data.ct is string && request.resource.data.ct.size() <= 200
+                    && request.resource.data.sal.size() <= 40 && request.resource.data.iv.size() <= 40;
+      allow delete: if logado() && resource.data.uid == request.auth.uid;
+    }
+
+    match /codigoRec/{id}       { allow read, write: if false; }
+    match /otp/{id}             { allow read, write: if false; }
+    match /tentativasLogin/{id} { allow read, write: if false; }
+    match /auditoria/{id}       { allow read, write: if false; }
+
+    // ---------- tudo o que não foi listado acima fica negado ----------
+    // (o Firestore já nega por padrão; a regra explícita deixa a intenção documentada)
+
+    // ---------- notificacoes ----------
+    match /notificacoes/{id} {
+      allow read, delete: if dono(resource.data.destinatarioId);
+      allow create: if logado();
+      allow update: if false;
+    }
+  }
+}
